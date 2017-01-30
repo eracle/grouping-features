@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="Gradle: :jMachineLearning:">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/lib/jMachineLearning.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
