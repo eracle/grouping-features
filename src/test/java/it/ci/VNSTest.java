@@ -38,23 +38,6 @@ public class VNSTest {
 
     @Test
     public void testFromArff() throws Exception {
-        // Dataset to work on ------------------------------------------------------------------------------
-        //String[] sdatasets = new String[]{"colon_tumor", "ionosphere", "glass"};
-        //String dpath = "data/" + sdatasets[0] + ".arff";
-        //String dpath = "data/glass.arff";
-
-        //String dpath = "C:\\Users\\alnouraME\\Desktop\\Summer 2016\\Datasets\\dexter\\dexter_first_half.arff";
-
-        //ClassificationDataset ddataset = com.jscilib.math.data.dataset.DatasetUtils.dicretizeViaFayyad(dataset);
-        //logger.info(ddataset.toString());
-
-        //System.out.println("path: " + dpath);
-        //String dpath = "C:\\1.arff";
-        //System.out.println("path: " +  dataset.getCategoricalValuesIndexes());
-
-
-
-
         ClassLoader classLoader = getClass().getClassLoader();
         File file = new File(classLoader.getResource("dexter_first_half.arff").getFile());
 
@@ -73,18 +56,7 @@ public class VNSTest {
         }
 
         System.out.println(solution3);
-        //System.out.println("Total attributes: " + solution3.features().length + " | Max K: " + bvns.getKMax() + " | Iteration: " + bvns.getNumberOfIterations());
 
-        //logger.info("best solution found: " + solution);
-
-        //====================================================================================
-        // NN: Online PGVNS
-//        System.out.println("/n/n NN TEST: get only one bag: "
-//        + algorithm.getThreshold() +
-//                algorithm.getBags() );
-
-
-        //====================================================================================
     }
 
 }
