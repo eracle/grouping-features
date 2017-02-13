@@ -1,6 +1,8 @@
 package it.ci;
 
+import org.junit.Assert;
 import org.junit.Test;
+import upo.jml.data.dataset.ClassificationDataset;
 import weka.core.Instances;
 
 import java.io.File;
@@ -25,10 +27,13 @@ public class FeatureSelectionTest {
         return file;
     }
 
+    private Instances getIonosphereArff() throws IOException {
+        File file = get_ionosphere();
+        return FeatureSelection.openArff(file);
+    }
     @Test
     public void testOpenArff() throws IOException {
-        File file = get_ionosphere();
-        Instances data = FeatureSelection.openArff(file);
+        Instances data =  getIonosphereArff();
         assertTrue(data!=null);
         for(int i=0; i < data.numAttributes(); i++){
             log.info(data.attribute(i).name());
@@ -41,5 +46,13 @@ public class FeatureSelectionTest {
         File file = get_ionosphere();
         Instances data = FeatureSelection.openArff(file);
         FeatureSelection.splitFeatures(data);
+    }
+
+    @Test
+    public void testInstances2ClassificationDataset() throws Exception {
+        Instances data = getIonosphereArff();
+        ClassificationDataset c_dataset = FeatureSelection.Instances2ClassificationDataset(data);
+        Assert.assertEquals(c_dataset.numberOfFeatures(), data.numAttributes()-1);
+        Assert.assertEquals(c_dataset.numberOfInstances(), data.numInstances());
     }
 }

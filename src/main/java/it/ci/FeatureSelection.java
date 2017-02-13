@@ -1,11 +1,14 @@
 package it.ci;
 
+import upo.jcu.io.Parameters;
+import upo.jml.data.dataset.DatasetUtils;
 import weka.core.Instance;
 import weka.core.Instances;
 
 import weka.core.converters.ArffLoader.ArffReader;
 
 import upo.jml.data.dataset.ClassificationDataset;
+import weka.core.converters.ArffSaver;
 import weka.filters.Filter;
 import weka.filters.unsupervised.attribute.RandomSubset;
 import weka.filters.unsupervised.attribute.Remove;
@@ -16,6 +19,8 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Random;
+
+import upo.jml.data.dataset.ClassificationDataset;
 
 import java.util.logging.Logger;
 
@@ -109,12 +114,14 @@ public class FeatureSelection {
             log.fine("Extracting half of the attributes");
             Instances percentage = RandomSubsetWrapper(data, percent_series[k]);
 
-            log.info(k+"th percentage:\n"+toStringAttributeNames(percentage));
+            log.info((k+1)+"th percentage:\n"+toStringAttributeNames(percentage));
             returns.add(percentage);
 
             data = computeDifference(percentage, data);
         }
 
+        log.info("last percentage:\n"+toStringAttributeNames(data));
+        returns.add(data);
         return returns;
 
     }
@@ -125,6 +132,34 @@ public class FeatureSelection {
             buf.append(data.attribute(i).name()+ " ");
         }
         return buf.toString();
+    }
+
+
+    /**
+     * Converts a Weka Instances dataset to a upo.jml.data.dataset.ClassificationDataset object.
+     * @param data The Instances dataset to convert
+     * @return
+     */
+    public static ClassificationDataset Instances2ClassificationDataset(Instances data) throws Exception {
+        //ClassificationDataset ret = new ClassificationDataset(
+
+
+        File tempFile = File.createTempFile("tmp_instances-", ".arff");
+        log.info("Created tmp file, path: "+tempFile.getAbsolutePath());
+        tempFile.deleteOnExit();
+
+        log.info("Saving weka instances on the file");
+        ArffSaver saver = new ArffSaver();
+        saver.setInstances(data);
+        saver.setFile(tempFile);
+        saver.writeBatch();
+
+        log.info("Opening the arff file with ClassificationDataset constructor");
+        ClassificationDataset dataset = DatasetUtils.loadArffClassificationDataset(tempFile.getAbsolutePath(), -1);
+        System.out.println(dataset);
+
+
+        return dataset;
     }
 }
 
