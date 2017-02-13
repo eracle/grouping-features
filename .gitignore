@@ -26,3 +26,5 @@ gradle-app.setting
 
 # Cache of project
 .gradletasknamecache
+
+workspace.xml
