@@ -2,6 +2,7 @@ package it.ci;
 
 import upo.jcu.io.Parameters;
 import upo.jml.data.dataset.DatasetUtils;
+import weka.core.Attribute;
 import weka.core.Instance;
 import weka.core.Instances;
 
@@ -17,6 +18,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Random;
 
@@ -76,19 +78,19 @@ public class FeatureSelection {
 
     /**
      * Return a dataset the main dataset where were been removed the attributes contained
-     * in smaller.
-     * @param smaller
+     * in attributes.
+     * @param attributes
      * @param main
      * @return
      */
-    private static Instances computeDifference(Instances smaller, Instances main)  throws Exception{
-        for(int i=0; i < smaller.numAttributes(); i++){
-            log.finer("Removing attribute:"+smaller.attribute(i).name()+" from the rest of the data");
+    private static Instances removeAttributes(ArrayList<Attribute> attributes, Instances main)  throws Exception{
+        for(int i=0; i < attributes.size(); i++){
+            log.finer("Removing attribute:"+ attributes.get(i).name()+" from the rest of the data");
             Remove remove = new Remove();
 
             for(int j=0; j< main.numAttributes(); j++){
                 String att_name = main.attribute(j).name();
-                if(att_name.equals(smaller.attribute(i).name())){
+                if(att_name.equals(attributes.get(i).name())){
                     log.finer("Found attribute to remove: "+att_name);
                     remove.setAttributeIndices(""+j);
                     remove.setInputFormat(main);
@@ -100,6 +102,8 @@ public class FeatureSelection {
         return main;
     }
 
+    double[] split_percentage = {.5, .1, .1, .1, .1, .1};
+
     public static ArrayList<Instances> splitFeatures(Instances data)  throws Exception{
         ArrayList<Instances> returns = new ArrayList<Instances>();
 
@@ -110,14 +114,16 @@ public class FeatureSelection {
         percent_series[3] = 0.3333;
         percent_series[4] = 0.5;
 
-        for(int k = 0; k < 4 ; k++){
+        for(int k = 0; k < 5 ; k++){
             log.fine("Extracting half of the attributes");
             Instances percentage = RandomSubsetWrapper(data, percent_series[k]);
 
             log.info((k+1)+"th percentage:\n"+toStringAttributeNames(percentage));
             returns.add(percentage);
 
-            data = computeDifference(percentage, data);
+            ArrayList<Attribute> attributes_to_remove = extract_attributes(percentage);
+
+            data = removeAttributes(attributes_to_remove, data);
         }
 
         log.info("last percentage:\n"+toStringAttributeNames(data));
@@ -126,6 +132,13 @@ public class FeatureSelection {
 
     }
 
+    private static ArrayList<Attribute> extract_attributes(Instances data){
+        ArrayList<Attribute> attributes_to_remove = new ArrayList<Attribute>();
+        for(int i=0; i < data.numAttributes(); i++){
+            attributes_to_remove.add(data.attribute(i));
+        }
+        return attributes_to_remove;
+    }
     private static String toStringAttributeNames(Instances data){
         StringBuffer buf = new StringBuffer();
         for(int i=0; i < data.numAttributes(); i++){

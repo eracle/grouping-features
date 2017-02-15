@@ -45,7 +45,22 @@ public class FeatureSelectionTest {
     public void testSplitFeatures() throws Exception {
         File file = get_ionosphere();
         Instances data = FeatureSelection.openArff(file);
-        FeatureSelection.splitFeatures(data);
+
+        ArrayList<Instances> list = FeatureSelection.splitFeatures(data);
+
+        assertEquals(6, list.size());
+        assertEquals(list.get(0).numAttributes()-1 , (data.numAttributes()-1)/2);
+
+        int tenth_num_attr = (data.numAttributes()-1)/10;
+        assertEquals(list.get(1).numAttributes()-1 , tenth_num_attr);
+
+        assertEquals(list.get(2).numAttributes()-1 , tenth_num_attr);
+        assertEquals(list.get(3).numAttributes()-1 , tenth_num_attr);
+        assertEquals(list.get(4).numAttributes()-1 , tenth_num_attr);
+
+        int last_num_attr = list.get(5).numAttributes()-1;
+
+        assertTrue((last_num_attr == tenth_num_attr) || last_num_attr == (tenth_num_attr+1));
     }
 
     @Test
