@@ -1,5 +1,6 @@
 package it.ci;
 
+import org.w3c.dom.Attr;
 import upo.jcu.io.Parameters;
 import upo.jml.data.dataset.DatasetUtils;
 import weka.core.Attribute;
@@ -20,6 +21,8 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Random;
 
 import upo.jml.data.dataset.ClassificationDataset;
@@ -37,8 +40,7 @@ import java.util.logging.Logger;
  */
 public class FeatureSelection {
 
-    // assumes the current class is called MyLogger
-    private final static Logger log = Logger.getLogger(FeatureSelection.class.getName());
+    private final static Logger logger = Logger.getLogger(FeatureSelection.class.getName());
 
     private static final int seed = 15;
 
@@ -48,11 +50,10 @@ public class FeatureSelection {
         Instances data;
         ArrayList<ClassificationDataset> datasets;
 
-        log.info("Open file: "+ file.getAbsolutePath());
+        logger.info("Open file: "+ file.getAbsolutePath());
         BufferedReader reader = new BufferedReader(new FileReader(file));
         ArffReader arff = new ArffReader(reader);
         data = arff.getData();
-        data.setClassIndex(data.numAttributes()-1);
         return data;
 
     }
@@ -77,74 +78,90 @@ public class FeatureSelection {
     }
 
     /**
-     * Return a dataset the main dataset where were been removed the attributes contained
-     * in attributes.
+     * Return a dataset (WEKA Instances object) with only the attributes keeped, all the others are deleted.
+     *
      * @param attributes
-     * @param main
+     * @param data
      * @return
      */
-    private static Instances removeAttributes(ArrayList<Attribute> attributes, Instances main)  throws Exception{
-        for(int i=0; i < attributes.size(); i++){
-            log.finer("Removing attribute:"+ attributes.get(i).name()+" from the rest of the data");
-            Remove remove = new Remove();
+    public static Instances keepAttributes(ArrayList<Attribute> attributes, Instances data)  throws Exception{
 
-            for(int j=0; j< main.numAttributes(); j++){
-                String att_name = main.attribute(j).name();
-                if(att_name.equals(attributes.get(i).name())){
-                    log.finer("Found attribute to remove: "+att_name);
-                    remove.setAttributeIndices(""+j);
-                    remove.setInputFormat(main);
-                }
+        ArrayList<Attribute> data_attributes =  Collections.list(data.enumerateAttributes());
+        StringBuffer indexes_list = new StringBuffer();
+        boolean first = true;
+        for(Attribute to_remove : attributes){
+            // logger.info("Removing attribute: "+ to_remove.name()+" from the rest of the data");
+            int index_to_remove = data_attributes.indexOf(to_remove)+1;
+            if(first){
+                indexes_list.append(""+index_to_remove);
+                first = false;
+            }else {
+                indexes_list.append("," + index_to_remove);
             }
-            log.finer("Applying remove filter");
-            main = Filter.useFilter(main, remove);
         }
-        return main;
+        Remove remove = new Remove();
+        String indexes_str = indexes_list.toString();
+        logger.info(indexes_str);
+
+        remove.setAttributeIndices(indexes_str);
+
+        remove.setInvertSelection(true);
+        remove.setInputFormat(data);
+        return Filter.useFilter(data, remove);
     }
 
-    double[] split_percentage = {.5, .1, .1, .1, .1, .1};
+    public static double[] split_percentages_50_10 = {.5, .1, .1, .1, .1, .1};
 
     public static ArrayList<Instances> splitFeatures(Instances data)  throws Exception{
-        ArrayList<Instances> returns = new ArrayList<Instances>();
+        return FeatureSelection.splitFeatures(data, FeatureSelection.split_percentages_50_10);
+    }
 
-        double[] percent_series = new double[5];
-        percent_series[0] = 0.5;
-        percent_series[1] = 0.2;
-        percent_series[2] = 0.25;
-        percent_series[3] = 0.3333;
-        percent_series[4] = 0.5;
+    /**
+     * Static method which splits the data (WEKA instances) passed as an argument by
+     * following the percentages contained on the split_percentages array.
+     * The splits are made by attributes (fields), are chosen randomly, and their intersection is null.
+     * During this process, the class attribute is not chosen, and is included on every returned Istances dataset.
+     * Is assumed that the last attribute of the data object (WEKA instances) is its class attribute.
+     * The sum of the double values contained in the split_percentages must sum up to 1.
+     * Is returned an ArrayList containing those WEKA instances objects.
+     * @param data
+     * @param split_percentages
+     * @return
+     * @throws Exception
+     */
+    public static ArrayList<Instances> splitFeatures(Instances data, double[] split_percentages)  throws Exception{
+        ArrayList<Attribute> attributes = Collections.list(data.enumerateAttributes());
 
-        for(int k = 0; k < 5 ; k++){
-            log.fine("Extracting half of the attributes");
-            Instances percentage = RandomSubsetWrapper(data, percent_series[k]);
+        Attribute class_att = attributes.remove(attributes.size()-1);
 
-            log.info((k+1)+"th percentage:\n"+toStringAttributeNames(percentage));
-            returns.add(percentage);
+        int num_attributes = attributes.size();
 
-            ArrayList<Attribute> attributes_to_remove = extract_attributes(percentage);
+        logger.info("Class attribute:" + class_att);
+        Collections.shuffle(attributes);
 
-            data = removeAttributes(attributes_to_remove, data);
+        ArrayList<ArrayList> sub_sets = new ArrayList<ArrayList>();
+
+        for(int k=0; k < split_percentages.length; k++){
+            int num_atts_to_take = (int)(split_percentages[k] * num_attributes);
+            logger.info("Number of attributes to take:" + num_atts_to_take);
+            ArrayList<Attribute> subset = new ArrayList<Attribute>();
+            for(int i = 0; i < num_atts_to_take; i++){
+                subset.add(attributes.remove(attributes.size()-1));
+            }
+            subset.add(class_att);
+            sub_sets.add(subset);
+            logger.info(subset.toString());
         }
 
-        log.info("last percentage:\n"+toStringAttributeNames(data));
-        returns.add(data);
+        ArrayList<Instances> returns = new ArrayList<Instances>();
+        for(ArrayList att_arr : sub_sets){
+            //todo: from here, print fucking ist
+            Instances sliced_data = FeatureSelection.keepAttributes(att_arr, data);
+            returns.add(sliced_data);
+            logger.info(FeatureSelection.toStringAttributeNames(sliced_data));
+        }
         return returns;
 
-    }
-
-    private static ArrayList<Attribute> extract_attributes(Instances data){
-        ArrayList<Attribute> attributes_to_remove = new ArrayList<Attribute>();
-        for(int i=0; i < data.numAttributes(); i++){
-            attributes_to_remove.add(data.attribute(i));
-        }
-        return attributes_to_remove;
-    }
-    private static String toStringAttributeNames(Instances data){
-        StringBuffer buf = new StringBuffer();
-        for(int i=0; i < data.numAttributes(); i++){
-            buf.append(data.attribute(i).name()+ " ");
-        }
-        return buf.toString();
     }
 
 
@@ -158,22 +175,32 @@ public class FeatureSelection {
 
 
         File tempFile = File.createTempFile("tmp_instances-", ".arff");
-        log.info("Created tmp file, path: "+tempFile.getAbsolutePath());
+        logger.info("Created tmp file, path: "+tempFile.getAbsolutePath());
         tempFile.deleteOnExit();
 
-        log.info("Saving weka instances on the file");
+        logger.info("Saving weka instances on the file");
         ArffSaver saver = new ArffSaver();
         saver.setInstances(data);
         saver.setFile(tempFile);
         saver.writeBatch();
 
-        log.info("Opening the arff file with ClassificationDataset constructor");
+        logger.info("Opening the arff file with ClassificationDataset constructor");
         ClassificationDataset dataset = DatasetUtils.loadArffClassificationDataset(tempFile.getAbsolutePath(), -1);
         System.out.println(dataset);
 
 
         return dataset;
     }
+
+
+    public static String toStringAttributeNames(Instances data){
+        StringBuffer buf = new StringBuffer();
+        for(int i=0; i < data.numAttributes(); i++){
+            buf.append(data.attribute(i).name()+ " ");
+        }
+        return buf.toString();
+    }
+
 }
 
 
