@@ -36,27 +36,5 @@ public class VNSTest {
         System.out.println(solution3);
     }
 
-    @Test
-    public void testFromArff() throws Exception {
-        ClassLoader classLoader = getClass().getClassLoader();
-        File file = new File(classLoader.getResource("dexter_first_half.arff").getFile());
-
-        ClassificationDataset dataset = DatasetUtils.loadArffDataset(file, -1);
-        if (!dataset.getDataType().equals(DataType.CATEGORICAL)) {
-            dataset = DatasetUtils.dicretizeViaFayyad(dataset);
-        }
-        FCBFBagSearch algorithm = VNS.FromArff(dataset);
-
-        FSSolution solution3 = algorithm.search();
-
-        List<FeatureBag> bags = algorithm.getBags();
-        System.out.println("#bags: " + bags.size());
-        for (int i = 0; i < bags.size(); i++) {
-            System.out.println(bags.get(i));
-        }
-
-        System.out.println(solution3);
-
-    }
 
 }

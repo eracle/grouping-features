@@ -1,10 +1,12 @@
 package it.ci;
 
-import org.w3c.dom.Attr;
-import upo.jcu.io.Parameters;
+import upo.jcu.math.data.dataset.DataType;
 import upo.jml.data.dataset.DatasetUtils;
+import upo.jml.prediction.classification.fss.algorithms.FCBFBagSearch;
+import upo.jml.prediction.classification.fss.core.FSSolution;
+import upo.jml.prediction.classification.fss.core.FeatureBag;
 import weka.core.Attribute;
-import weka.core.Instance;
+
 import weka.core.Instances;
 
 import weka.core.converters.ArffLoader.ArffReader;
@@ -19,13 +21,13 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.lang.reflect.Array;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Random;
 
-import upo.jml.data.dataset.ClassificationDataset;
+
+
 
 import java.util.logging.Logger;
 
@@ -42,18 +44,12 @@ public class FeatureSelection {
 
     private final static Logger logger = Logger.getLogger(FeatureSelection.class.getName());
 
-    private static final int seed = 15;
-
-
 
     public static Instances openArff(File file) throws IOException {
-        Instances data;
-        ArrayList<ClassificationDataset> datasets;
-
         logger.info("Open file: "+ file.getAbsolutePath());
         BufferedReader reader = new BufferedReader(new FileReader(file));
         ArffReader arff = new ArffReader(reader);
-        data = arff.getData();
+        Instances data = arff.getData();
         return data;
 
     }
@@ -64,6 +60,7 @@ public class FeatureSelection {
      * @param percent
      * @return
      */
+    @Deprecated
     private static Instances RandomSubsetWrapper(Instances data, double percent)throws Exception{
         RandomSubset subset = new RandomSubset();
 
@@ -78,13 +75,13 @@ public class FeatureSelection {
     }
 
     /**
-     * Return a dataset (WEKA Instances object) with only the attributes keeped, all the others are deleted.
+     * Return a dataset (WEKA Instances object) with only the attributes kept, all the others are deleted.
      *
      * @param attributes
      * @param data
      * @return
      */
-    public static Instances keepAttributes(ArrayList<Attribute> attributes, Instances data)  throws Exception{
+    protected static Instances keepAttributes(ArrayList<Attribute> attributes, Instances data)  throws Exception{
 
         ArrayList<Attribute> data_attributes =  Collections.list(data.enumerateAttributes());
         StringBuffer indexes_list = new StringBuffer();
@@ -110,7 +107,7 @@ public class FeatureSelection {
         return Filter.useFilter(data, remove);
     }
 
-    public static double[] split_percentages_50_10 = {.5, .1, .1, .1, .1, .1};
+    private static double[] split_percentages_50_10 = {.5, .1, .1, .1, .1, .1};
 
     public static ArrayList<Instances> splitFeatures(Instances data)  throws Exception{
         return FeatureSelection.splitFeatures(data, FeatureSelection.split_percentages_50_10);
@@ -186,22 +183,49 @@ public class FeatureSelection {
 
         logger.info("Opening the arff file with ClassificationDataset constructor");
         ClassificationDataset dataset = DatasetUtils.loadArffClassificationDataset(tempFile.getAbsolutePath(), -1);
-        System.out.println(dataset);
+        //System.out.println(dataset);
 
 
         return dataset;
     }
 
 
-    public static String toStringAttributeNames(Instances data){
-        StringBuffer buf = new StringBuffer();
+    private static String toStringAttributeNames(Instances data){
+        StringBuilder buf = new StringBuilder();
         for(int i=0; i < data.numAttributes(); i++){
-            buf.append(data.attribute(i).name()+ " ");
+            buf.append(data.attribute(i).name()).append(" ");
         }
         return buf.toString();
     }
 
+
+    public static FCBFBagSearch removeIrrilevantFeatures(ClassificationDataset dataset) throws Exception {
+        if (!dataset.getDataType().equals(DataType.CATEGORICAL))
+            dataset = DatasetUtils.dicretizeViaFayyad(dataset);
+
+        // FSObjectiveFunction ------------------------------------------------------------------------------
+        // FSObjectiveFunction of = new CfsEvaluator(dataset.getCategoricalData(), dataset.getLabels());
+        // of.buildEvaluator();
+        // FSPredGroupsBasicVNS bvns = new FSPredGroupsBasicVNS(dataset.getCategoricalData(), dataset.getLabels(), of, true);
+        // FSSolution solution = bvns.search();
+        // System.out.println(solution);
+        // System.out.println("------------------------------");
+
+
+        // FSObjectiveFunction ------------------------------------------------------------------------------
+        FCBFBagSearch algorithm = new FCBFBagSearch(dataset, 0.0);
+        //FCBFBagSearch algorithm = new FCBFBagSearch(dataset.getCategoricalData(), dataset.getLabels(), 0.);
+
+        FSSolution solution3 = algorithm.search();
+
+        List<FeatureBag> bags = algorithm.getBags();
+        System.out.println("#bags: " + bags.size());
+        for(int i = 0; i < bags.size(); i++) {
+            System.out.println(bags.get(i));
+        }
+
+        System.out.println(solution3);
+        return algorithm;
+    }
+
 }
-
-
-

@@ -47,24 +47,6 @@ public class VNS {
         return algorithm;
     }
 
-    public static FCBFBagSearch FromArff(ClassificationDataset dataset) throws Exception {
-
-        
-        // FSObjectiveFunction ------------------------------------------------------------------------------
-//        FSObjectiveFunction of = new CfsEvaluator(dataset.getCategoricalData(), dataset.getLabels());
-//        of.buildEvaluator();
-//        FSPredGroupsBasicVNS bvns = new FSPredGroupsBasicVNS(dataset.getCategoricalData(), dataset.getLabels(), of, true);
-//        FSSolution solution = bvns.search();
-//        System.out.println(solution);
-//        System.out.println("------------------------------");
-        
-        
-        // FSObjectiveFunction ------------------------------------------------------------------------------
-        FCBFBagSearch algorithm = new FCBFBagSearch(dataset, 0.0);
-        //FCBFBagSearch algorithm = new FCBFBagSearch(dataset.getCategoricalData(), dataset.getLabels(), 0.);
-
-        return algorithm;
-    }
 
 
 }
